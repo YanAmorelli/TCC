@@ -1,21 +1,32 @@
-library("dplyr")
-library("ggplot2")
-library(readxl)
-library(GGally)
-#library("corrplot")
-#library("hrbrthemes")
-#library("ggthemes")
+# Import libraries
+if(!require(pacman)) install.packages("pacman")
+pacman::p_load(readxl, dplyr, ggplot2, GGally) # "corrplot", "hrbrthemes", "ggthemes"
 
 # Configuração do projeto 
 ## Carregando dados
 ecommerce_dataset.path <- "C:/Users/3CON-RJ/Desktop/Yan/Faculdades/TCC/Bases/ECommerceDataset.xlsx"
 ecommerce_dataset <- read_xlsx(ecommerce_dataset.path, sheet = 2)
 ecommerce_dict <- read_xlsx(ecommerce_dataset.path, sheet = 1)
+
 ## Paleta de cores
 cor_unica <- "#3D348B"
 paleta <- c("#1B1B1E", "#FA9500", "#76877D", "#3D348B", "#B8DBD9")
 
 # Estudo da base
+## Analisando as variáveis
+unique(ecommerce_dataset$PreferredLoginDevice)
+unique(ecommerce_dataset$PreferredPaymentMode) # CC é cripto currency ou credit card?
+unique(ecommerce_dataset$PreferedOrderCat)
+unique(ecommerce_dataset$MaritalStatus)
+
+## Ajustando a base
+ecommerce_dataset <- ecommerce_dataset[-1]
+ecommerce_dataset <- ecommerce_dataset %>% 
+  mutate(PreferredPaymentMode = (if_else(PreferredPaymentMode == "COD", "Cash on Delivery", PreferredPaymentMode))) %>%
+  mutate(PreferredPaymentMode = (if_else(PreferredPaymentMode == "CC", "Credit Card", PreferredPaymentMode))) %>%
+  mutate(PreferredPaymentMode = (if_else(PreferredPaymentMode == "UPI", "Unified Payments Interface", PreferredPaymentMode)))
+unique(ecommerce_dataset$PreferredPaymentMode)
+
 ## Estatísticas básicas
 summary(ecommerce_dataset)
 
@@ -61,49 +72,8 @@ plot.churn <- ggplot(freq.churn, aes(x = as.factor(Churn), y = freq, fill = as.f
   xlab("Churn")
 plot.churn
 
-freq.gender <- telco_data %>%
-  group_by(gender, Churn) %>%
-  summarise(Frequencia = n()) %>%
-  group_by(gender) %>%
-  mutate(Proportion = Frequencia / sum(Frequencia) * 100)
-plot.gender <- ggplot(freq.gender, aes(fill=Churn, y=Proportion, x=gender))  + 
-  geom_bar(position="stack", stat="identity")
-plot.gender
-
-freq.senior <- telco_data %>%
-  group_by(IsSenior, Churn) %>%
-  summarise(Frequencia = n()) %>%
-  group_by(IsSenior) %>%
-  mutate(Proportion = Frequencia / sum(Frequencia) * 100)
-plot.senior <- ggplot(freq.senior, aes(fill=Churn, y=Proportion, x=IsSenior))  + 
-  geom_bar(position="stack", stat="identity")
-plot.senior
-
-freq.partner <- telco_data %>%
-  group_by(Partner, Churn) %>%
-  summarise(Frequencia = n()) %>%
-  group_by(Partner) %>%
-  mutate(Proportion = Frequencia / sum(Frequencia) * 100)
-plot.partner <- ggplot(freq.partner, aes(fill=Churn, y=Proportion, x=Partner))  + 
-  geom_bar(position="stack", stat="identity")
-plot.partner
-
-freq.dependents <- telco_data %>%
-  group_by(Dependents, Churn) %>%
-  summarise(Frequencia = n()) %>%
-  group_by(Dependents) %>%
-  mutate(Proportion = Frequencia / sum(Frequencia) * 100)
-plot.dependents <- ggplot(freq.dependents, aes(fill=Churn, y=Proportion, x=Dependents))  + 
-  geom_bar(position="stack", stat="identity")
-plot.dependents
-
-freq.internet_service <- telco_data %>%
-  group_by(InternetService, Churn) %>%
-  summarise(Frequencia = n()) %>%
-  group_by(InternetService) %>%
-  mutate(Proportion = Frequencia / sum(Frequencia) * 100)
-
-plot.internet_service <- ggplot(freq.internet_service, aes(fill=Churn, y=Proportion, x=InternetService))  + 
-  geom_bar(position="stack", stat="identity")
-plot.internet_service
-
+freq.paymentmode <- ecommerce_dataset %>% 
+  group_by(PreferredPaymentMode) %>%
+  summarise(n = n()) %>% 
+  mutate(freq = n / sum(n) * 100) %>%
+  ungroup()
